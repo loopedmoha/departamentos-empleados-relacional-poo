@@ -5,6 +5,14 @@ import models.Empleado
 import repos.DepartamentosRepository
 import repos.EmpleadoRepository
 
+/**
+ * Controlador 1-M
+ * @property departamentosRepository DepartamentosRepository
+ * @property empleadoRepository EmpleadoRepository
+ * @property departamentos MutableList<Departamento>
+ * @property empleados MutableList<Empleado>
+ * @constructor
+ */
 class Controller(var departamentosRepository: DepartamentosRepository, var empleadoRepository: EmpleadoRepository) {
 
     var departamentos : MutableList<Departamento> = departamentosRepository.findAll() as MutableList<Departamento>
@@ -12,6 +20,9 @@ class Controller(var departamentosRepository: DepartamentosRepository, var emple
 
     fun deleteDepartamento(departamento: Departamento): Boolean {
         check(departamento.empleados.isNotEmpty()) { "El departamento tiene empleados." }
+        /*if(departamento.empleados.isNotEmpty()){
+            departamento.empleados.forEach{deleteEmpleado(it)}
+        }*/
         departamentosRepository.findById(departamento.uuid)?.let {
             return departamentosRepository.delete(departamento)
         } ?: run {
@@ -21,10 +32,13 @@ class Controller(var departamentosRepository: DepartamentosRepository, var emple
 
     }
 
+    fun getEmpleados(){
+        println(empleadoRepository.findAll())
+    }
     fun deleteEmpleado(empleado: Empleado): Boolean {
 
         if (empleadoRepository.findById(empleado.uuid) != null) {
-            departamentosRepository.findById(empleado.departamentoId)?.let {
+            departamentosRepository.findById(empleado.departamento!!.uuid)?.let {
                 if (it.empleados.size == 1) {
                     it.empleados.removeFirst()
                     departamentosRepository.delete(it)
@@ -57,9 +71,7 @@ class Controller(var departamentosRepository: DepartamentosRepository, var emple
 
     fun createEmpleado(empleado: Empleado) : Boolean{
         require(empleadoRepository.findById(empleado.uuid) == null){"Ya existe ese empleado con ese id"}
-        val depDest = departamentos.filter { it.uuid == empleado.departamentoId }
-        depDest.first().empleados.add(empleado)
-        empleados.add(empleado)
+        empleadoRepository.save(empleado)
         return true
     }
 

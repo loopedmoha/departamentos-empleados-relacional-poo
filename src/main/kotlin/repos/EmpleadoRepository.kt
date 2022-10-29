@@ -5,7 +5,7 @@ import models.Empleado
 import java.time.LocalDate
 import java.util.*
 
-class EmpleadoRepository : IEmpleadoRepository {
+class EmpleadoRepository (private val departamentosRepository: DepartamentosRepository): IEmpleadoRepository {
     override fun findAll(): List<Empleado> {
         val query = "SELECT * FROM Empleados"
         DataBaseManager.open()
@@ -17,7 +17,8 @@ class EmpleadoRepository : IEmpleadoRepository {
                     uuid = res.getObject("uuid") as UUID,
                     nombre = res.getString("nombre"),
                     nacimiento = LocalDate.parse(res.getString("nacimiento")),
-                    departamentoId = res.getObject("departamentoId") as UUID
+                    departamento =
+                    (res.getObject("departamentoId") as UUID?)?.let { departamentosRepository.findById(it) }
                 ).let {
                     lista.add(it)
                 }
@@ -39,7 +40,7 @@ class EmpleadoRepository : IEmpleadoRepository {
                     uuid = it.getObject("uuid") as UUID,
                     nombre = it.getString("nombre"),
                     nacimiento = LocalDate.parse(it.getString("nacimiento")),
-                    departamentoId = it.getObject("departamentoId") as UUID
+                    departamento = departamentosRepository.findById(it.getObject("departamentoId") as UUID)
                 )
 
             }
@@ -66,7 +67,7 @@ class EmpleadoRepository : IEmpleadoRepository {
             (uuid, nombre, nacimiento, departamentoId) VALUES (?, ?, ?, ?)
         """.trimIndent()
         DataBaseManager.open()
-        DataBaseManager.insert(query, empleado.uuid, empleado.nombre, empleado.nacimiento, empleado.departamentoId)
+        DataBaseManager.insert(query, empleado.uuid, empleado.nombre, empleado.nacimiento, empleado.departamento?.uuid)
         DataBaseManager.close()
         return empleado
     }
